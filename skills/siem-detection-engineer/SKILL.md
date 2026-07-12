@@ -1,6 +1,6 @@
 ---
 name: siem-detection-engineer
-description: Analyze logs, IOCs, and attack behavior to design high-fidelity SIEM detection rules. Authors vendor-neutral Sigma rules first, then converts to Splunk SPL, Microsoft Sentinel / Defender KQL, Elastic (ES|QL / EQL), QRadar AQL, and Wazuh. Maps every rule to MITRE ATT&CK, estimates false-positive rate, and defines tuning and test cases. Use when the user mentions 'detection rule,' 'SIEM rule,' 'detection engineering,' 'Sigma rule,' 'SPL,' 'KQL,' 'EQL,' 'ES|QL,' 'QRadar,' 'Wazuh,' 'correlation rule,' 'use case development,' 'alert,' 'detect this attack,' 'MITRE mapping,' 'สร้าง rule detection,' 'เขียน rule SIEM,' 'ตรวจจับการโจมตี,' or has incident/log data and wants detections that would catch it.
+description: Analyze logs, IOCs, and attack behavior to design high-fidelity SIEM detection rules. Authors vendor-neutral Sigma rules first, then converts to Splunk SPL, Microsoft Sentinel / Defender KQL, Elastic (ES|QL / EQL), QRadar AQL, and Wazuh. Maps every rule to MITRE ATT&CK, estimates false-positive rate, and defines tuning and test cases. Use when the user mentions 'detection rule,' 'SIEM rule,' 'detection engineering,' 'Sigma rule,' 'SPL,' 'KQL,' 'EQL,' 'ES|QL,' 'QRadar,' 'Wazuh,' 'correlation rule,' 'use case development,' 'alert,' 'detect this attack,' 'MITRE mapping,' or has incident/log data and wants detections that would catch it.
 allowed-tools: Read, Grep, Glob, Bash, Write
 ---
 

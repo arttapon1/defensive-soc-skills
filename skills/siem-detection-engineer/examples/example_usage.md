@@ -1,7 +1,7 @@
 # Example — SIEM Detection Engineer
 
-**Prompt:** "จากเหตุการณ์ brute force แล้ว login สำเร็จอันนี้ ช่วยเขียน detection rule
-สำหรับ Splunk กับ Sentinel ให้หน่อย"
+**Prompt:** "From this brute-force-then-successful-login incident, write a detection
+rule for Splunk and Sentinel."
 
 **What the skill does:**
 1. States the hypothesis: *detect T1110 by observing repeated 4625 then a 4624 from

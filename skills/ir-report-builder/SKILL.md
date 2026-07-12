@@ -1,6 +1,6 @@
 ---
 name: ir-report-builder
-description: Analyze security logs and incident data to reconstruct an attack timeline, build an incident response plan following NIST SP 800-61 / SANS PICERL, and produce a detailed technical report plus a concise executive summary (Thai + English). Use when the user mentions 'IR report,' 'incident response report,' 'incident analysis,' 'log analysis for incident,' 'attack timeline,' 'root cause analysis,' 'executive summary of incident,' 'post-incident report,' 'IR plan,' 'containment plan,' 'สรุปเหตุการณ์,' 'รายงานการตอบสนองเหตุการณ์,' 'วิเคราะห์ล็อก,' 'รายงานผู้บริหาร,' or has raw logs / alerts and needs them turned into an investigation and report.
+description: Analyze security logs and incident data to reconstruct an attack timeline, build an incident response plan following NIST SP 800-61 / SANS PICERL, and produce a detailed technical report plus a concise executive summary. Use when the user mentions 'IR report,' 'incident response report,' 'incident analysis,' 'log analysis for incident,' 'attack timeline,' 'root cause analysis,' 'executive summary of incident,' 'post-incident report,' 'IR plan,' 'containment plan,' or has raw logs / alerts and needs them turned into an investigation and report.
 allowed-tools: Read, Grep, Glob, Bash, Write
 ---
 
@@ -42,14 +42,14 @@ Map adversary behavior to **MITRE ATT&CK** technique IDs wherever the evidence s
 
 6. **Write two deliverables.**
    - **Technical report** → fill `templates/ir-report-template.md`. Dense, evidence-cited, reproducible.
-   - **Executive summary** → fill `templates/exec-summary-template.md`. One page, business-impact-first, no jargon, Thai + English. Answer: what happened, what's the impact, is it contained, what do we need from leadership.
+   - **Executive summary** → fill `templates/exec-summary-template.md`. One page, business-impact-first, no jargon. Answer: what happened, what's the impact, is it contained, what do we need from leadership.
 
 7. **Quality gate.** Every claim in the report must cite an evidence line (timestamp + source). Mark anything inferred as *assessed with [high/medium/low] confidence*. List logging/visibility gaps explicitly.
 
 ## Output format
 
 - Technical report: Markdown, sectioned per the template, with an appendix of raw evidence excerpts and IOC tables.
-- Executive summary: single page, bilingual, leads with impact and status. Use a severity label (Critical/High/Medium/Low) and a one-line "bottom line up front."
+- Executive summary: single page, leads with impact and status. Use a severity label (Critical/High/Medium/Low) and a one-line "bottom line up front."
 
 ## Handoffs
 

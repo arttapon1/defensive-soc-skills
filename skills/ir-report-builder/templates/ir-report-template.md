@@ -1,4 +1,4 @@
-# Incident Response Report / รายงานการตอบสนองต่อเหตุการณ์
+# Incident Response Report
 
 **Incident ID:** IR-YYYY-NNNN  ·  **Severity:** ____  ·  **Status:** ____
 **Reporting window:** ____ (TZ: ____)  ·  **Author:** ____  ·  **Distribution:** [TLP:AMBER]

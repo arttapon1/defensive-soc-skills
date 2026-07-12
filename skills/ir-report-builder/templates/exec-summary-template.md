@@ -1,39 +1,38 @@
-# Executive Summary — Security Incident / สรุปเหตุการณ์สำหรับผู้บริหาร
+# Executive Summary — Security Incident
 
-**Incident ID:** IR-YYYY-NNNN  ·  **Date/เวลา:** ____  ·  **Classification/ระดับ:** [Critical / High / Medium / Low]
-**Status/สถานะ:** [Active / Contained / Eradicated / Recovered / Closed]
-**Prepared by/จัดทำโดย:** ____
+**Incident ID:** IR-YYYY-NNNN  ·  **Date:** ____  ·  **Classification:** [Critical / High / Medium / Low]
+**Status:** [Active / Contained / Eradicated / Recovered / Closed]
+**Prepared by:** ____
 
 ---
 
-## Bottom Line Up Front / สรุปสั้นที่สุด
-<!-- 2-3 ประโยค: เกิดอะไร กระทบอะไร คุมได้หรือยัง -->
-_EN:_ ____
-_TH:_ ____
+## Bottom Line Up Front
+<!-- 2-3 sentences: what happened, what's the impact, is it contained -->
+____
 
-## What happened / เกิดอะไรขึ้น
-<!-- ภาษาคนทั่วไป ไม่ใช้ศัพท์เทคนิค -->
+## What happened
+<!-- Plain language, no technical jargon -->
 - ____
 
-## Business impact / ผลกระทบต่อธุรกิจ
-| Area / ด้าน | Impact / ผลกระทบ |
+## Business impact
+| Area | Impact |
 |---|---|
-| Data / ข้อมูล | ____ |
-| Systems / ระบบ | ____ |
-| Customers / ลูกค้า | ____ |
-| Regulatory / ข้อกำหนด | ____ |
-| Financial / การเงิน (est.) | ____ |
+| Data | ____ |
+| Systems | ____ |
+| Customers | ____ |
+| Regulatory | ____ |
+| Financial (est.) | ____ |
 
-## Current status / สถานะปัจจุบัน
-- Contained? / ควบคุมแล้ว: ____
-- Systems restored / กู้คืนแล้ว: ____
-- Remaining risk / ความเสี่ยงคงเหลือ: ____
+## Current status
+- Contained? ____
+- Systems restored: ____
+- Remaining risk: ____
 
-## What we need from leadership / สิ่งที่ต้องการจากผู้บริหาร
-<!-- decision, budget, external comms, legal, ฯลฯ -->
+## What we need from leadership
+<!-- decision, budget, external comms, legal, etc. -->
 1. ____
 
-## Next milestones / ขั้นถัดไป
-| When / เมื่อไหร่ | Action / การดำเนินการ | Owner / ผู้รับผิดชอบ |
+## Next milestones
+| When | Action | Owner |
 |---|---|---|
 | ____ | ____ | ____ |

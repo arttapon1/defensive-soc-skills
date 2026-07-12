@@ -1,7 +1,7 @@
 # Example — SOAR Playbook Builder
 
-**Prompt:** "ทำ playbook: พอ SIEM เจอ IP ต้องสงสัย ให้ไปเช็ค VirusTotal ก่อน ถ้า
-malicious ให้บล็อกที่ Cloudflare อัตโนมัติ แต่ต้องมี approval สำหรับ production"
+**Prompt:** "Build a playbook: when the SIEM flags a suspicious IP, check VirusTotal
+first; if malicious, auto-block it on Cloudflare — but require approval for production."
 
 **What the skill does:**
 1. Defines the trigger (SIEM detection → indicator = IP).

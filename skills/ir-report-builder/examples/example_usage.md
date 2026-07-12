@@ -1,6 +1,7 @@
 # Example — IR Report Builder
 
-**Prompt:** "นี่คือ log จาก firewall กับ auth server ช่วงที่โดนโจมตี ช่วยวิเคราะห์แล้วทำรายงาน IR + สรุปผู้บริหารให้หน่อย"
+**Prompt:** "Here are the firewall and auth-server logs from the time of the attack.
+Analyze them and produce an IR report with an executive summary."
 
 **What the skill does:**
 1. Runs `log_timeline.py` over the provided files:
@@ -12,7 +13,7 @@
    to MITRE ATT&CK.
 3. Extracts IOCs and assesses blast radius.
 4. Fills `templates/ir-report-template.md` (technical) and
-   `templates/exec-summary-template.md` (one-page, bilingual, impact-first).
+   `templates/exec-summary-template.md` (one-page, impact-first).
 
 **Output:** a detailed IR report with cited evidence + a leadership summary that
 answers: what happened, impact, containment status, and what's needed from leadership.

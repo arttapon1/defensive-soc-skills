@@ -1,181 +1,181 @@
-# คู่มือการใช้งาน — Defensive SOC Skills
+# User Manual — Defensive SOC Skills
 
-คู่มือฉบับละเอียดสำหรับชุด Agent Skills สาย defensive/SOC ทั้ง 3 ตัว
-(User Manual — Thai primary, English notes inline)
+A detailed guide to the three defensive / SOC Agent Skills in this suite.
 
-> ทั้งชุดออกแบบมาให้ทำงานต่อกันเป็น pipeline: **สืบสวน → ตรวจจับ → ตอบโต้**
+> The suite is designed to work as a pipeline: **investigate → detect → respond**
 > (`ir-report-builder` → `siem-detection-engineer` → `soar-playbook-builder`)
 
 ---
 
-## สารบัญ
+## Table of contents
 
-1. [ข้อกำหนดเบื้องต้น](#1-ข้อกำหนดเบื้องต้น)
-2. [การติดตั้ง](#2-การติดตั้ง)
-3. [แนวคิดพื้นฐาน: skill ทำงานอย่างไร](#3-แนวคิดพื้นฐาน-skill-ทำงานอย่างไร)
+1. [Prerequisites](#1-prerequisites)
+2. [Installation](#2-installation)
+3. [How skills work](#3-how-skills-work)
 4. [Skill 1 — ir-report-builder](#4-skill-1--ir-report-builder)
 5. [Skill 2 — siem-detection-engineer](#5-skill-2--siem-detection-engineer)
 6. [Skill 3 — soar-playbook-builder](#6-skill-3--soar-playbook-builder)
-7. [Workflow ต่อกันทั้ง pipeline](#7-workflow-ต่อกันทั้ง-pipeline)
-8. [ความปลอดภัย & ข้อควรระวัง](#8-ความปลอดภัย--ข้อควรระวัง)
-9. [FAQ / แก้ปัญหาที่พบบ่อย](#9-faq--แก้ปัญหาที่พบบ่อย)
+7. [End-to-end pipeline workflow](#7-end-to-end-pipeline-workflow)
+8. [Security & safety notes](#8-security--safety-notes)
+9. [FAQ / troubleshooting](#9-faq--troubleshooting)
 
 ---
 
-## 1. ข้อกำหนดเบื้องต้น
+## 1. Prerequisites
 
-| สิ่งที่ต้องมี | รายละเอียด |
+| Requirement | Details |
 |---|---|
-| Claude Code | ติดตั้งแล้ว และใช้งานได้ (CLI / IDE / desktop) |
-| Python 3.8+ | สำหรับรัน helper scripts (ใช้ **stdlib ล้วน ไม่ต้อง pip install**) |
-| สิทธิ์การใช้งาน | ใช้กับระบบที่คุณเป็นเจ้าของหรือได้รับอนุญาตให้ป้องกันเท่านั้น |
-| API keys (เฉพาะ SOAR) | VirusTotal / AbuseIPDB / OTX / Group-IB — ถ้าจะ enrich จริง (ไม่มีก็รันได้แบบ partial) |
+| Claude Code | Installed and working (CLI / IDE / desktop) |
+| Python 3.8+ | To run the helper scripts (**stdlib only — no `pip install`**) |
+| Authorization | Use only on systems you own or are engaged to defend |
+| API keys (SOAR only) | VirusTotal / AbuseIPDB / OTX / Group-IB — needed only for live enrichment (runs partially without them) |
 
-ตรวจ Python:
+Check Python:
 ```bash
 python3 --version
 ```
 
 ---
 
-## 2. การติดตั้ง
+## 2. Installation
 
 ```bash
 git clone https://github.com/arttapon1/defensive-soc-skills.git
 cd defensive-soc-skills
-./install.sh          # คัดลอก skill ทั้ง 3 ไปที่ ~/.claude/skills/
+./install.sh          # copies all 3 skills into ~/.claude/skills/
 ```
 
-ติดตั้งเองแบบเลือกตัว:
+Install a single skill manually:
 ```bash
 cp -R skills/ir-report-builder ~/.claude/skills/
 ```
 
-**สำคัญ:** หลังติดตั้ง ให้ **เปิด Claude Code session ใหม่** เพื่อให้ระบบโหลด skill
+**Important:** after installing, **start a new Claude Code session** so the skills load.
 
-ตรวจว่าติดตั้งแล้ว:
+Verify the install:
 ```bash
 ls ~/.claude/skills/ | grep -E 'ir-report|siem-detection|soar-playbook'
 ```
 
 ---
 
-## 3. แนวคิดพื้นฐาน: skill ทำงานอย่างไร
+## 3. How skills work
 
-- Skill **ไม่ต้องเรียกด้วยคำสั่งพิเศษ** — แค่พิมพ์งานเป็นภาษาธรรมชาติ (ไทยหรืออังกฤษ)
-  แล้ว Claude จะเลือก skill ที่ตรงกับงานให้เอง โดยดูจากคำที่คุณพิมพ์ (trigger words)
-- แต่ละ skill มีโครงสร้าง:
+- Skills need **no special command** — just describe the task in natural language and
+  Claude picks the matching skill based on the words you use (trigger words).
+- Each skill has this structure:
   ```
-  skills/<ชื่อ skill>/
-  ├── SKILL.md      ← สมองของ skill (Claude อ่านอันนี้)
-  ├── scripts/      ← โค้ดที่ Claude เรียกใช้อัตโนมัติ
-  ├── templates/    ← เทมเพลตรายงาน/rule/playbook
-  └── resources/    ← ข้อมูลอ้างอิง (field mapping, integration catalog)
+  skills/<skill-name>/
+  ├── SKILL.md      ← the skill's brain (Claude reads this)
+  ├── scripts/      ← code Claude runs automatically
+  ├── templates/    ← report / rule / playbook templates
+  └── resources/    ← reference data (field mapping, integration catalog)
   ```
-- คุณสั่งงานเป็นภาษาคน — Claude เป็นคนตัดสินใจว่าจะรัน script ตัวไหน เมื่อไหร่
+- You give the instruction in plain language — Claude decides which script to run and when.
 
 ---
 
 ## 4. Skill 1 — ir-report-builder
 
-**หน้าที่:** เอา log/alert ดิบ มาสร้าง attack timeline, IR plan (NIST SP 800-61 / SANS
-PICERL), รายงานเทคนิคละเอียด + สรุปผู้บริหาร (ไทย/อังกฤษ)
+**Purpose:** turn raw logs/alerts into an attack timeline, an IR plan (NIST SP 800-61 /
+SANS PICERL), a detailed technical report, and an executive summary.
 
-### วิธีเรียกใช้
-พิมพ์ประโยคที่มีคำพวกนี้: *"วิเคราะห์ล็อก"*, *"ทำรายงาน IR"*, *"สรุปเหตุการณ์"*,
-*"รายงานผู้บริหาร"*, *"attack timeline"*, *"root cause"*
+### How to trigger it
+Use a sentence containing words like: *"analyze logs"*, *"IR report"*,
+*"incident summary"*, *"executive summary"*, *"attack timeline"*, *"root cause"*.
 
-**ตัวอย่างคำสั่ง:**
-> "นี่ log จาก firewall กับ auth server ตอนโดนโจมตี ช่วยวิเคราะห์แล้วทำรายงาน IR
-> พร้อมสรุปผู้บริหารให้หน่อย"
+**Example prompt:**
+> "Here are the firewall and auth-server logs from when we were attacked. Analyze them
+> and produce an IR report with an executive summary."
 
-### สิ่งที่ skill ทำให้
-1. รัน `log_timeline.py` รวม log หลายฟอร์แมตเป็น timeline เดียว + เก็บ hash เพื่อ chain of custody
-2. เรียงลำดับการโจมตี (initial access → lateral movement → impact) map กับ MITRE ATT&CK
-3. ดึง IOC และประเมินผลกระทบ
-4. เติมเทมเพลต 2 ชุด: รายงานเทคนิค + สรุปผู้บริหาร 1 หน้า
+### What the skill does
+1. Runs `log_timeline.py` to merge multiple log formats into one timeline + records a
+   hash of each file for chain of custody.
+2. Reconstructs the attack (initial access → lateral movement → impact), mapped to MITRE ATT&CK.
+3. Extracts IOCs and assesses impact.
+4. Fills two templates: a technical report + a one-page executive summary.
 
-### ใช้ helper script เอง (ถ้าต้องการ)
+### Using the helper script directly
 ```bash
 cd ~/.claude/skills/ir-report-builder
 
-# รวม log เป็น timeline (CSV)
+# Merge logs into a timeline (CSV)
 python3 scripts/log_timeline.py --tz +07:00 --out timeline.csv fw.log auth.json access.log
 
-# ออกเป็น JSON
+# Emit JSON instead
 python3 scripts/log_timeline.py --tz +07:00 --format json --out timeline.json *.log
 ```
-รองรับ: RFC3164/RFC5424 syslog, JSON lines, CSV, CEF, Apache/Nginx access log,
-**FortiGate & appliance key-value/logfmt** (`date=... time=... srcip=...`), และ **AWS CloudTrail** JSON
-ผลลัพธ์ stderr จะพิมพ์ SHA-256 ของทุกไฟล์ input ไว้เป็นหลักฐาน
+Supported: RFC3164/RFC5424 syslog, JSON lines, CSV, CEF, Apache/Nginx access log,
+**FortiGate & appliance key-value/logfmt** (`date=... time=... srcip=...`), and **AWS CloudTrail** JSON.
+The stderr output prints a SHA-256 of every input file as evidence.
 
-### ไฟล์สำคัญ
-- `templates/ir-report-template.md` — โครงรายงานเทคนิค (evidence, timeline, ATT&CK, IOC, PICERL)
-- `templates/exec-summary-template.md` — สรุปผู้บริหาร 1 หน้า (ไทย/อังกฤษ, เน้น business impact)
+### Key files
+- `templates/ir-report-template.md` — technical report skeleton (evidence, timeline, ATT&CK, IOC, PICERL)
+- `templates/exec-summary-template.md` — one-page executive summary (business-impact-first)
 
 ---
 
 ## 5. Skill 2 — siem-detection-engineer
 
-**หน้าที่:** เอาข้อมูล/พฤติกรรมโจมตี มาออกแบบ detection rule เขียนเป็น **Sigma** (กลาง)
-แล้วแปลงเป็น Splunk SPL / Sentinel KQL / Elastic EQL / QRadar / Wazuh + map ATT&CK +
-ประเมิน false positive
+**Purpose:** turn data / attack behavior into detection rules — authored as **Sigma**
+(vendor-neutral) and converted to Splunk SPL / Sentinel KQL / Elastic EQL / QRadar /
+Wazuh, with MITRE ATT&CK mapping and false-positive estimates.
 
-### วิธีเรียกใช้
-คำ trigger: *"สร้าง rule detection"*, *"เขียน rule SIEM"*, *"ตรวจจับการโจมตี"*,
-*"Sigma rule"*, *"SPL"*, *"KQL"*, *"detection engineering"*
+### How to trigger it
+Trigger words: *"detection rule"*, *"SIEM rule"*, *"Sigma rule"*, *"SPL"*, *"KQL"*,
+*"detection engineering"*, *"detect this attack"*.
 
-**ตัวอย่างคำสั่ง:**
-> "จากเหตุการณ์ brute force แล้ว login สำเร็จอันนี้ ช่วยเขียน detection rule
-> สำหรับ Splunk กับ Sentinel ให้หน่อย"
+**Example prompt:**
+> "From this brute-force-then-successful-login incident, write a detection rule for
+> Splunk and Sentinel."
 
-### สิ่งที่ skill ทำให้
-1. ตั้งสมมติฐานการตรวจจับ (detection hypothesis) ผูกกับ ATT&CK technique
-2. เขียน Sigma rule จากเทมเพลต
-3. แปลงเป็น query หลาย platform
-4. เทียบชื่อ field ให้ตรง schema จริง (สาเหตุ #1 ที่ rule ไม่ทำงาน)
-5. กำหนด severity, FP rate, และ test case (positive/negative)
+### What the skill does
+1. States a detection hypothesis tied to an ATT&CK technique.
+2. Authors a Sigma rule from the template.
+3. Converts it to multiple platforms.
+4. Aligns field names with the real schema (the #1 reason rules don't fire).
+5. Sets severity, FP rate, and positive/negative test cases.
 
-### ใช้ helper script เอง
+### Using the helper script directly
 ```bash
 cd ~/.claude/skills/siem-detection-engineer
 
-# แปลง Sigma rule เป็นทุก platform
+# Convert a Sigma rule to all platforms
 python3 scripts/sigma_to_queries.py rule.yml
 
-# เลือก platform เดียว
+# Pick a single platform
 python3 scripts/sigma_to_queries.py --platform kql rule.yml
 ```
-> ⚠️ ผลลัพธ์เป็น **first-pass** ต้องรีวิว/แก้ field ให้ตรง schema จริงก่อน deploy เสมอ
+> ⚠️ Output is **first-pass** — always review and map fields to your real schema before deploying.
 
-### ไฟล์สำคัญ
-- `templates/sigma-rule-template.yml` — โครง Sigma rule พร้อมช่อง falsepositives / tuning / test
-- `resources/log-source-mapping.md` — ตารางเทียบ field ข้าม SIEM (Splunk CIM ↔ ECS ↔ KQL ↔ ...)
-  + checklist ก่อน deploy rule
+### Key files
+- `templates/sigma-rule-template.yml` — Sigma rule skeleton with falsepositives / tuning / test slots
+- `resources/log-source-mapping.md` — cross-SIEM field mapping table (Splunk CIM ↔ ECS ↔ KQL ↔ ...)
+  plus a pre-deployment checklist
 
 ---
 
 ## 6. Skill 3 — soar-playbook-builder
 
-**หน้าที่:** สร้าง SOAR playbook — enrich IOC จาก threat intel แล้วสั่งบล็อกอัตโนมัติ
-ผ่าน API ของ Firewall/WAF/IPS/DLP/EDR พร้อม guardrail, approval gate, rollback
+**Purpose:** build SOAR playbooks — enrich IOCs with threat intel, then auto-block via
+Firewall/WAF/IPS/DLP/EDR APIs, with guardrails, approval gates, and rollback.
 
-### วิธีเรียกใช้
-คำ trigger: *"สร้าง playbook"*, *"ระงับการโจมตีอัตโนมัติ"*, *"เชื่อม API firewall"*,
-*"auto-block"*, *"enrich IOC"*, *"SOAR"*
+### How to trigger it
+Trigger words: *"SOAR"*, *"playbook"*, *"automated response"*, *"auto-block"*,
+*"firewall API"*, *"enrich IOC"*.
 
-**ตัวอย่างคำสั่ง:**
-> "ทำ playbook: พอ SIEM เจอ IP ต้องสงสัย ให้เช็ค VirusTotal ก่อน ถ้า malicious
-> ให้บล็อกที่ Cloudflare อัตโนมัติ แต่ production ต้องมี approval"
+**Example prompt:**
+> "Build a playbook: when the SIEM flags a suspicious IP, check VirusTotal first; if
+> malicious, auto-block it on Cloudflare — but production requires approval."
 
-### สิ่งที่ skill ทำให้
-1. นิยาม trigger + indicator
-2. Enrich จากหลายแหล่ง (VT / AbuseIPDB / OTX / Group-IB) → รวมเป็น verdict + confidence
-3. เขียน decision logic ชัดเจน (malicious+high → block, suspicious → escalate, else → close)
-4. ผูก action กับ API อุปกรณ์ (dry-run ก่อน)
-5. ใส่ guardrail: allowlist ห้ามบล็อก, approval gate, TTL, rollback, audit log
+### What the skill does
+1. Defines the trigger + indicator.
+2. Enriches from multiple sources (VT / AbuseIPDB / OTX / Group-IB) → aggregate verdict + confidence.
+3. Writes explicit decision logic (malicious+high → block, suspicious → escalate, else → close).
+4. Binds actions to device APIs (dry-run first).
+5. Adds guardrails: never-block allowlist, approval gate, TTL, rollback, audit log.
 
-### ตั้งค่า API keys (เก็บใน env — ห้าม hardcode)
+### Configure API keys (store in env — never hardcode)
 ```bash
 export VT_API_KEY="..."
 export ABUSEIPDB_API_KEY="..."
@@ -187,110 +187,111 @@ export FORTI_API_TOKEN="..."; export FORTI_HOST="..."      # FortiGate
 export FALCON_TOKEN="..."; export FALCON_CLOUD="api.crowdstrike.com"  # CrowdStrike
 ```
 
-### ใช้ helper script เอง
+### Using the helper scripts directly
 ```bash
 cd ~/.claude/skills/soar-playbook-builder
 
-# 1) Enrich IOC (read-only ปลอดภัย)
+# 1) Enrich an IOC (read-only, safe)
 python3 scripts/enrich_ioc.py 203.0.113.10
 python3 scripts/enrich_ioc.py --type hash 44d88612fea8a8f36de82e1278abb02f
 
-# 2) บล็อก — DRY-RUN เป็นค่าเริ่มต้น (ไม่ยิงจริง)
+# 2) Block — DRY-RUN by default (nothing is sent)
 python3 scripts/respond_block.py --integration cloudflare --action block \
     --indicator 203.0.113.10 --ttl 24h
 
-# 3) บล็อกจริง — ต้องใส่ --commit เอง และต้องตั้ง API key แล้ว
+# 3) Block for real — you must pass --commit and set the API key first
 python3 scripts/respond_block.py --integration cloudflare --action block \
     --indicator 203.0.113.10 --ttl 24h --commit
 
-# 4) ยกเลิกบล็อก (rollback)
+# 4) Unblock (rollback)
 python3 scripts/respond_block.py --integration cloudflare --action unblock \
     --indicator 203.0.113.10 --commit
 
-# FortiGate — สร้าง address object เพื่อผูกกับ deny policy/blocklist group
+# FortiGate — create an address object to bind to a deny policy / blocklist group
 python3 scripts/respond_block.py --integration fortinet --action block \
     --indicator 203.0.113.10 --commit
 
-# CrowdStrike Falcon — เพิ่ม custom IOC (action=prevent) รองรับ ip/domain/hash
+# CrowdStrike Falcon — add a custom IOC (action=prevent); supports ip/domain/hash
 python3 scripts/respond_block.py --integration crowdstrike --action block \
     --indicator 44d88612fea8a8f36de82e1278abb02f --commit
 ```
 
-**Integration ที่รองรับตอนนี้:** `cloudflare`, `paloalto`, `fortinet`, `crowdstrike`
-(เพิ่มตัวอื่นได้โดยเขียนฟังก์ชันใน `respond_block.py` แล้วลงทะเบียนใน `INTEGRATIONS`)
+**Currently supported integrations:** `cloudflare`, `paloalto`, `fortinet`, `crowdstrike`
+(add more by writing a function in `respond_block.py` and registering it in `INTEGRATIONS`).
 
-> 🛡️ **กลไกความปลอดภัยในตัว:**
-> - Dry-run เป็นค่าเริ่มต้น — ต้อง `--commit` เท่านั้นถึงจะยิง API จริง
-> - Allowlist ปฏิเสธการบล็อก IP ภายใน (RFC1918) และช่วงที่คุณกำหนด
-> - ถ้าไม่ได้ตั้ง API key จะไม่ยอมทำ destructive action
+> 🛡️ **Built-in safety:**
+> - Dry-run is the default — only `--commit` actually sends the API call.
+> - The allowlist refuses to block internal IPs (RFC1918) and any ranges you add.
+> - Destructive actions are refused if the API key is not set in the environment.
 
-### ไฟล์สำคัญ
-- `templates/playbook-template.yml` — โครง playbook กลาง (trigger/enrich/decision/action/guardrail/rollback)
-- `resources/integration-catalog.md` — แคตตาล็อก API (endpoint, env var, rate limit) ของ VT,
-  Palo Alto, Fortinet, Check Point, Cloudflare, AWS WAF, F5, EDR ฯลฯ
+### Key files
+- `templates/playbook-template.yml` — vendor-neutral playbook skeleton (trigger/enrich/decision/action/guardrail/rollback)
+- `resources/integration-catalog.md` — API catalog (endpoint, env var, rate limit) for VT,
+  Palo Alto, Fortinet, Check Point, Cloudflare, AWS WAF, F5, CrowdStrike, and more
 
 ---
 
-## 7. Workflow ต่อกันทั้ง pipeline
+## 7. End-to-end pipeline workflow
 
 ```
-  [ Log/Alert ดิบ ]
+  [ Raw logs / alerts ]
          │
          ▼
   ┌────────────────────┐   IOC + ATT&CK technique
   │ ir-report-builder  │ ───────────────────────────┐
-  │ สืบสวน + รายงาน     │                            │
+  │ investigate + report│                            │
   └────────────────────┘                            ▼
                                         ┌──────────────────────────┐
                                         │ siem-detection-engineer  │
-                                        │ เขียน rule ปิดช่องโหว่     │
+                                        │ write rules to close gaps │
                                         └──────────────────────────┘
-                                                     │ detection ที่ควร auto-respond
+                                                     │ detections worth auto-responding to
                                                      ▼
                                         ┌──────────────────────────┐
-   action ที่ทำ ──────────────────────▶│ soar-playbook-builder    │
-   (feed กลับเข้า incident record)      │ enrich + auto-block       │
+   actions taken ─────────────────────▶│ soar-playbook-builder    │
+   (fed back into incident record)      │ enrich + auto-block       │
                                         └──────────────────────────┘
 ```
 
-**ตัวอย่างการใช้จริงต่อกัน:**
-1. "วิเคราะห์ log เหตุการณ์นี้ทำรายงาน IR" → ได้ timeline + IOC + technique
-2. "เอา technique จากเหตุการณ์เมื่อกี้ มาเขียน detection rule สำหรับ Splunk" → ได้ Sigma + SPL
-3. "ทำ playbook auto-block IOC พวกนี้บน firewall พร้อม enrich VirusTotal" → ได้ playbook + dry-run
+**A realistic chained example:**
+1. "Analyze the logs from this incident and write an IR report" → timeline + IOCs + techniques.
+2. "Take the techniques from that incident and write a detection rule for Splunk" → Sigma + SPL.
+3. "Build a playbook to auto-block these IOCs on the firewall with VirusTotal enrichment" → playbook + dry-run.
 
 ---
 
-## 8. ความปลอดภัย & ข้อควรระวัง
+## 8. Security & safety notes
 
-- ✅ **ใช้กับระบบที่ได้รับอนุญาตเท่านั้น** — การ recon/block ระบบที่ไม่มีสิทธิ์ผิดกฎหมาย
-- ✅ **รักษาความสมบูรณ์ของหลักฐาน** — วิเคราะห์บนสำเนา log เสมอ อย่าแก้ไฟล์ต้นฉบับ
-- ✅ **automation ที่บล็อก production ทำให้ระบบล่มได้** — ทดสอบ dry-run ก่อนทุกครั้ง,
-  ตั้ง allowlist ให้ครบ, ใช้ approval gate สำหรับ production
-- ✅ **เก็บ API key ใน secrets manager / env** — `.gitignore` กันไฟล์ `.env`, `*.key`, `*.pem`,
-  `*.log` ไว้แล้ว อย่า commit credential เด็ดขาด
-- ✅ **ทุก action ต้องมี rollback + audit log** — playbook template บังคับให้ใส่
-
----
-
-## 9. FAQ / แก้ปัญหาที่พบบ่อย
-
-**Q: พิมพ์งานแล้ว skill ไม่เด้งขึ้นมา?**
-A: (1) เปิด session ใหม่หลังติดตั้ง (2) ลองใช้คำ trigger ให้ชัดขึ้น เช่นระบุ "detection rule",
-"IR report", "playbook" (3) เช็กว่าโฟลเดอร์อยู่ใน `~/.claude/skills/` และมีไฟล์ `SKILL.md`
-
-**Q: script ฟ้อง `ModuleNotFoundError`?**
-A: ไม่ควรเกิด เพราะทุก script ใช้ stdlib ล้วน — ตรวจว่าใช้ `python3` (ไม่ใช่ `python` เก่า)
-
-**Q: `enrich_ioc.py` ขึ้น "no API keys set"?**
-A: ปกติ — ยังไม่ได้ตั้ง env var ตั้ง `VT_API_KEY` ฯลฯ ก่อน แล้วรันใหม่
-
-**Q: `respond_block.py` ขึ้น "REFUSED: ... never-block allowlist"?**
-A: ถูกต้องแล้ว — IP นั้นอยู่ในช่วงที่ห้ามบล็อก (RFC1918 หรือที่คุณกำหนดใน `NEVER_BLOCK`)
-
-**Q: sigma_to_queries.py แปลงแล้ว field ไม่ตรงกับ SIEM ของเรา?**
-A: เป็น first-pass ต้อง map field เองตาม `resources/log-source-mapping.md`
-สำหรับ production แนะนำใช้ `sigma-cli`/pySigma ที่มี backend + field-mapping pipeline
+- ✅ **Authorized systems only** — recon/blocking systems you don't have rights to is illegal.
+- ✅ **Preserve evidence integrity** — always analyze copies of logs; never modify originals.
+- ✅ **Automation that blocks production can cause outages** — always test dry-run first,
+  keep the allowlist complete, and use approval gates for production.
+- ✅ **Store API keys in a secrets manager / env** — `.gitignore` already blocks `.env`,
+  `*.key`, `*.pem`, and `*.log`; never commit credentials.
+- ✅ **Every action needs rollback + audit log** — the playbook template enforces this.
 
 ---
 
-*License: MIT — ดู [LICENSE](LICENSE) · Issues/PR ยินดีรับครับ*
+## 9. FAQ / troubleshooting
+
+**Q: I typed a task but the skill didn't activate.**
+A: (1) Start a new session after installing. (2) Use clearer trigger words such as
+"detection rule", "IR report", "playbook". (3) Confirm the folder is in
+`~/.claude/skills/` and contains a `SKILL.md`.
+
+**Q: A script raises `ModuleNotFoundError`.**
+A: It shouldn't — every script is stdlib-only. Make sure you run `python3` (not an old `python`).
+
+**Q: `enrich_ioc.py` says "no API keys set".**
+A: Expected — you haven't set the env vars yet. Set `VT_API_KEY` etc. and re-run.
+
+**Q: `respond_block.py` says "REFUSED: ... never-block allowlist".**
+A: Correct behavior — that IP is in a protected range (RFC1918 or a range you added to `NEVER_BLOCK`).
+
+**Q: `sigma_to_queries.py` output fields don't match my SIEM.**
+A: It's a first-pass; map fields yourself using `resources/log-source-mapping.md`. For
+production, consider `sigma-cli` / pySigma with a backend + field-mapping pipeline.
+
+---
+
+*License: MIT — see [LICENSE](LICENSE) · Issues / PRs welcome.*

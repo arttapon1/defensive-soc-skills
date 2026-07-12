@@ -3,15 +3,13 @@
 A suite of three **original** Claude Code / Agent Skills for blue-team / SOC work.
 They form a pipeline: **investigate → detect → respond**.
 
-ชุด Agent Skills สาย **defensive / SOC** ที่เขียนขึ้นเอง 3 ตัว ต่อกันเป็น pipeline: สืบสวนเหตุการณ์ → ออกแบบ detection → ตอบโต้อัตโนมัติ
+> 📖 **Full usage guide → [MANUAL.md](MANUAL.md)** (install, how each skill activates, helper-script CLI usage, FAQ)
 
-> 📖 **คู่มือการใช้งานฉบับละเอียด → [MANUAL.md](MANUAL.md)** (ติดตั้ง, วิธีเรียกแต่ละ skill, การใช้ script, FAQ)
-
-| Skill | ทำอะไร | Handoff |
+| Skill | What it does | Handoff |
 |---|---|---|
-| **ir-report-builder** | วิเคราะห์ log ทั้งหมด → สร้าง attack timeline, IR plan (NIST 800-61 / PICERL), รายงานเทคนิคละเอียด + สรุปผู้บริหาร (ไทย/อังกฤษ) | IOC + technique → detection |
-| **siem-detection-engineer** | จากข้อมูล/พฤติกรรมโจมตี → เขียน Sigma rule แล้วแปลงเป็น SPL / KQL / EQL / QRadar / Wazuh + map MITRE ATT&CK + ประเมิน false positive | detection → response |
-| **soar-playbook-builder** | สร้าง SOAR playbook เชื่อม API ไป Firewall/WAF/IPS/DLP เพื่อบล็อกอัตโนมัติ + enrich จาก VirusTotal/AbuseIPDB/OTX/Group-IB พร้อม guardrail & rollback | actions → incident record |
+| **ir-report-builder** | Analyze all logs → attack timeline, IR plan (NIST 800-61 / PICERL), detailed technical report + executive summary | IOC + technique → detection |
+| **siem-detection-engineer** | From data / attack behavior → author Sigma rules, then convert to SPL / KQL / EQL / QRadar / Wazuh + MITRE ATT&CK mapping + false-positive estimate | detection → response |
+| **soar-playbook-builder** | Build SOAR playbooks that call device APIs (Firewall/WAF/IPS/DLP) for automated blocking + threat-intel enrichment (VirusTotal/AbuseIPDB/OTX/Group-IB), with guardrails & rollback | actions → incident record |
 
 ---
 
@@ -56,9 +54,9 @@ Or manually:
 cp -R skills/* ~/.claude/skills/
 ```
 
-Start a new Claude Code session, then just describe the task — e.g. *"วิเคราะห์ log
-พวกนี้แล้วทำรายงาน IR"*, *"เขียน detection rule จากเหตุการณ์นี้"*, *"สร้าง playbook
-บล็อก IP นี้บน firewall"* — and the matching skill activates.
+Start a new Claude Code session, then just describe the task — e.g. *"analyze these
+logs and write an IR report"*, *"write a detection rule for this incident"*, *"build
+a playbook to block this IP on the firewall"* — and the matching skill activates.
 
 ## License
 MIT — see [LICENSE](LICENSE). You wrote it; you own it.
