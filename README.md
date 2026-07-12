@@ -5,6 +5,8 @@ They form a pipeline: **investigate → detect → respond**.
 
 ชุด Agent Skills สาย **defensive / SOC** ที่เขียนขึ้นเอง 3 ตัว ต่อกันเป็น pipeline: สืบสวนเหตุการณ์ → ออกแบบ detection → ตอบโต้อัตโนมัติ
 
+> 📖 **คู่มือการใช้งานฉบับละเอียด → [MANUAL.md](MANUAL.md)** (ติดตั้ง, วิธีเรียกแต่ละ skill, การใช้ script, FAQ)
+
 | Skill | ทำอะไร | Handoff |
 |---|---|---|
 | **ir-report-builder** | วิเคราะห์ log ทั้งหมด → สร้าง attack timeline, IR plan (NIST 800-61 / PICERL), รายงานเทคนิคละเอียด + สรุปผู้บริหาร (ไทย/อังกฤษ) | IOC + technique → detection |
