@@ -44,7 +44,7 @@ redistributed, and remain under their own terms.
 ## Install
 
 ```bash
-git clone https://github.com/<your-username>/defensive-soc-skills.git
+git clone https://github.com/arttapon1/defensive-soc-skills.git
 cd defensive-soc-skills
 ./install.sh          # copies the 3 skills into ~/.claude/skills/
 ```
