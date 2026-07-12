@@ -13,10 +13,40 @@ They form a pipeline: **investigate → detect → respond**.
 
 ---
 
+## Pipeline at a glance
+
+```mermaid
+flowchart LR
+    L(["Raw logs / alerts"]):::io --> IR
+    IR["🔍 ir-report-builder<br/>investigate + report"]:::skill
+    DE["🛰️ siem-detection-engineer<br/>detect"]:::skill
+    SO["⚡ soar-playbook-builder<br/>respond"]:::skill
+    IR -->|"IOCs + ATT&CK techniques"| DE
+    DE -->|"detections worth auto-responding"| SO
+    SO -.->|"actions taken → incident record"| IR
+    classDef skill fill:#0d3b66,stroke:#0a2e50,color:#fff;
+    classDef io fill:#e8eef5,stroke:#9db2c9,color:#111;
+```
+
+---
+
 ## How each skill works
 
 ### 🔍 ir-report-builder — investigate & report
 Follows NIST SP 800-61 and SANS PICERL, mapping observed behavior to MITRE ATT&CK.
+
+```mermaid
+flowchart TD
+    A["Intake &amp; scope<br/>+ confirm authorization"] --> B["Normalize evidence<br/>log_timeline.py + SHA-256"]
+    B --> C["Reconstruct timeline<br/>initial access → impact"]
+    C --> D["Analyze<br/>IOCs · ATT&CK · root cause"]
+    D --> E["Build IR plan<br/>contain / eradicate / recover"]
+    E --> F["Technical report"]
+    E --> G["Executive summary"]
+    F --> H{{"Quality gate<br/>cite evidence · confidence · gaps"}}
+    G --> H
+    H -->|"IOCs + techniques"| N["▶ siem-detection-engineer"]
+```
 
 1. **Intake & scope** — confirm incident type, affected assets, detection time,
    available data sources, and authorization.
@@ -39,6 +69,17 @@ Follows NIST SP 800-61 and SANS PICERL, mapping observed behavior to MITRE ATT&C
 ### 🛰️ siem-detection-engineer — detect
 Sigma is the source of truth; platform queries are generated from it.
 
+```mermaid
+flowchart TD
+    A["Understand the data<br/>map fields to SIEM schema"] --> B["Form hypothesis<br/>tie to ATT&CK technique"]
+    B --> C["Author Sigma rule"]
+    C --> D["Convert<br/>sigma_to_queries.py → SPL / KQL / EQL"]
+    D --> E["Rate &amp; tune<br/>severity · FP rate · allowlists"]
+    E --> F["Test<br/>positive + negative events"]
+    F --> G["Rule package<br/>Sigma + queries + ATT&CK + tests"]
+    G -->|"detections worth auto-responding"| N["▶ soar-playbook-builder"]
+```
+
 1. **Understand the data** — align the log source and its fields to the target SIEM
    schema using `resources/log-source-mapping.md` (the #1 cause of dead rules).
 2. **Form the hypothesis** — *"detect \<technique\> by observing \<signal\> in \<log
@@ -57,6 +98,17 @@ Sigma is the source of truth; platform queries are generated from it.
 
 ### ⚡ soar-playbook-builder — respond
 Safety-first automation: enrich before acting, gate blast radius, keep everything reversible.
+
+```mermaid
+flowchart TD
+    A["Trigger<br/>detection + indicators"] --> B["Enrich<br/>enrich_ioc.py: VT / AbuseIPDB / OTX / Group-IB"]
+    B --> C{"Decision<br/>score + confidence"}
+    C -->|"malicious + high"| D["Contain<br/>respond_block.py — dry-run first"]
+    C -->|"suspicious"| E["Escalate<br/>create ticket"]
+    C -->|"benign"| F["Close as false positive"]
+    D --> G[["Guardrails<br/>allowlist · approval gate · TTL · rollback · audit"]]
+    G -->|"actions taken → incident record"| N["▶ ir-report-builder"]
+```
 
 1. **Define the trigger** — the detection/alert that starts the playbook and its indicators.
 2. **Enrich** — `enrich_ioc.py` queries VirusTotal / AbuseIPDB / OTX / Group-IB and
