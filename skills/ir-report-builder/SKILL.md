@@ -28,7 +28,7 @@ Map adversary behavior to **MITRE ATT&CK** technique IDs wherever the evidence s
 
 1. **Intake & scope.** Ask for (or infer from provided data): incident type, affected assets, detection time, data sources available, and business criticality. Confirm the reporting window and time zone. Never assume authorization — confirm it.
 
-2. **Normalize the evidence.** Identify each log source and its format. Use `scripts/log_timeline.py` to parse common formats (syslog, JSON, CSV, CEF, Apache/Nginx) into a single normalized, timezone-aligned event list. Keep a hash of every source file for chain of custody.
+2. **Normalize the evidence.** Identify each log source and its format. Use `scripts/log_timeline.py` to parse common formats (RFC3164/RFC5424 syslog, JSON lines, CSV, CEF, Apache/Nginx access, FortiGate & appliance key-value/logfmt, and AWS CloudTrail JSON) into a single normalized, timezone-aligned event list. Keep a hash of every source file for chain of custody.
 
 3. **Reconstruct the timeline.** Order events chronologically. Flag the *initial access*, *first malicious action*, *lateral movement*, *privilege escalation*, *impact*, and *last observed activity*. Note gaps in logging as gaps, not as absence of activity.
 

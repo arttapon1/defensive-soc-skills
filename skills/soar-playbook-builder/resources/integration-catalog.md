@@ -27,7 +27,8 @@ variables by the reference scripts.
 | `waf_f5` | F5 BIG-IP | `F5_TOKEN`, `F5_HOST` | data-group / iRule | iControl REST |
 | `ips` | (e.g. Snort/Suricata mgr) | mgr token | push block rule | reload sensor |
 | `dlp` | (vendor) | vendor token | add policy / quarantine | |
-| `edr` | CrowdStrike / Defender / SentinelOne | vendor token | isolate host / block hash | |
+| `crowdstrike` | CrowdStrike Falcon | `FALCON_TOKEN`, `FALCON_CLOUD` | custom IOC (prevent) / host containment | token from `/oauth2/token` (client id+secret); `FALCON_CLOUD` e.g. `api.crowdstrike.com` |
+| `edr` (other) | Defender / SentinelOne | vendor token | isolate host / block hash | |
 | `ticketing` | ServiceNow / Jira | `SNOW_*` / `JIRA_*` | create incident | |
 | `chatops` | Slack / Teams | `SLACK_WEBHOOK` | post message | |
 

@@ -36,10 +36,10 @@ redistributed, and remain under their own terms.
 
 | Script | Purpose | Verified |
 |---|---|---|
-| `ir-report-builder/scripts/log_timeline.py` | Normalize syslog/JSON/CSV/CEF/access logs into one sorted timeline + SHA-256 chain of custody | ✅ |
+| `ir-report-builder/scripts/log_timeline.py` | Normalize syslog (RFC3164/5424) / JSON / CSV / CEF / access / FortiGate KV / AWS CloudTrail into one sorted timeline + SHA-256 chain of custody | ✅ |
 | `siem-detection-engineer/scripts/sigma_to_queries.py` | First-pass Sigma → SPL/KQL/EQL conversion | ✅ |
 | `soar-playbook-builder/scripts/enrich_ioc.py` | Multi-source IOC reputation (VT/AbuseIPDB/OTX/Group-IB) | ✅ |
-| `soar-playbook-builder/scripts/respond_block.py` | Firewall/WAF block/unblock, dry-run + allowlist guard | ✅ |
+| `soar-playbook-builder/scripts/respond_block.py` | Block/unblock via Cloudflare / Palo Alto / FortiGate / CrowdStrike, dry-run + allowlist guard | ✅ |
 
 ---
 

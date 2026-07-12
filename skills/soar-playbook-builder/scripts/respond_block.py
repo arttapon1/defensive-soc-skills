@@ -11,8 +11,8 @@ Blocks (or unblocks) an indicator on a firewall/WAF via API. Safety-first:
 
 Stdlib only. Only operate against infrastructure you are authorized to control.
 
-Supported (reference) integrations: cloudflare, paloalto.
-Extend `INTEGRATIONS` for Fortinet, Check Point, F5, AWS WAF, etc.
+Supported (reference) integrations: cloudflare, paloalto, fortinet, crowdstrike.
+Extend `INTEGRATIONS` for Check Point, F5, AWS WAF, etc.
 
 Usage:
     # dry-run (safe, default)
@@ -27,6 +27,7 @@ import argparse
 import ipaddress
 import json
 import os
+import re
 import sys
 import urllib.request
 import urllib.error
@@ -87,7 +88,62 @@ def paloalto(action, indicator, ttl):
             "POST", url, headers, {"cmd": xml})
 
 
-INTEGRATIONS = {"cloudflare": cloudflare, "paloalto": paloalto}
+def fortinet(action, indicator, ttl):
+    token = os.getenv("FORTI_API_TOKEN", "<FORTI_API_TOKEN>")
+    host = os.getenv("FORTI_HOST", "<FORTI_HOST>")
+    name = f"soar_block_{indicator}"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    if action == "block":
+        # Create a firewall address object. To actually deny traffic, reference it
+        # from a deny policy or add it to the 'soar_blocklist' address group.
+        url = f"https://{host}/api/v2/cmdb/firewall/address"
+        body = {"name": name, "subnet": f"{indicator} 255.255.255.255",
+                "comment": f"SOAR auto-block ttl={ttl}"}
+        return (f"FortiGate create address object {name} ({indicator}) "
+                f"— bind to deny policy / soar_blocklist group",
+                "POST", url, headers, body)
+    url = f"https://{host}/api/v2/cmdb/firewall/address/{name}"
+    return (f"FortiGate delete address object {name}", "DELETE", url, headers, None)
+
+
+def _falcon_ioc_type(indicator: str) -> str:
+    try:
+        ipaddress.ip_address(indicator)
+        return "ipv4" if ":" not in indicator else "ipv6"
+    except ValueError:
+        pass
+    h = indicator.strip().lower()
+    if len(h) == 32 and all(c in "0123456789abcdef" for c in h):
+        return "md5"
+    if len(h) == 64 and all(c in "0123456789abcdef" for c in h):
+        return "sha256"
+    return "domain"
+
+
+def crowdstrike(action, indicator, ttl):
+    # CrowdStrike Falcon custom IOC management. FALCON_TOKEN must be a bearer token
+    # already obtained from the /oauth2/token endpoint (client_id + secret).
+    token = os.getenv("FALCON_TOKEN", "<FALCON_TOKEN>")
+    base = os.getenv("FALCON_CLOUD", "api.crowdstrike.com")
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    itype = _falcon_ioc_type(indicator)
+    if action == "block":
+        url = f"https://{base}/iocs/entities/indicators/v1"
+        body = {"indicators": [{
+            "type": itype, "value": indicator, "action": "prevent",
+            "severity": "high", "platforms": ["windows", "mac", "linux"],
+            "applied_globally": True,
+            "description": f"SOAR auto-block ttl={ttl}",
+        }]}
+        return (f"CrowdStrike add custom IOC {itype}:{indicator} action=prevent",
+                "POST", url, headers, body)
+    # Unblock: delete by filter (resolving the IOC id happens server-side).
+    url = f"https://{base}/iocs/entities/indicators/v1?filter=value:'{indicator}'"
+    return (f"CrowdStrike remove custom IOC {indicator}", "DELETE", url, headers, None)
+
+
+INTEGRATIONS = {"cloudflare": cloudflare, "paloalto": paloalto,
+                "fortinet": fortinet, "crowdstrike": crowdstrike}
 
 
 def main():
@@ -119,7 +175,7 @@ def main():
         print(f"(headers: {redacted})")
         return
 
-    if "<CF_API_TOKEN>" in json.dumps(headers) or "<PANOS_API_KEY>" in url:
+    if re.search(r"<[A-Z0-9_]+>", url + json.dumps(headers)):
         sys.exit("REFUSED: credentials not set in environment. See integration-catalog.md.")
 
     status, resp = http(method, url, headers, body)

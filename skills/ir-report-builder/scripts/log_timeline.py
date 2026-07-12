@@ -35,8 +35,37 @@ ACCESS_RE = re.compile(
     r'^(?P<ip>\S+)\s+\S+\s+\S+\s+\[(?P<ts>[^\]]+)\]\s+"(?P<req>[^"]*)"\s+'
     r'(?P<status>\d{3})\s+(?P<size>\S+)(?:\s+"(?P<ref>[^"]*)"\s+"(?P<ua>[^"]*)")?'
 )
+SYSLOG5424_RE = re.compile(
+    r"^<\d+>1\s+(?P<ts>\S+)\s+(?P<host>\S+)\s+(?P<app>\S+)\s+(?P<pid>\S+)\s+"
+    r"(?P<msgid>\S+)\s+(?:-|\[.*?\])\s*(?P<msg>.*)$"
+)
+KV_RE = re.compile(r"([A-Za-z][\w.\-]*)=(\"[^\"]*\"|\[[^\]]*\]|\S+)")
 MONTHS = {m: i for i, m in enumerate(
     ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"], 1)}
+
+
+def parse_kv(line: str):
+    """Parse a key=value / logfmt line (FortiGate & many appliances)."""
+    pairs = KV_RE.findall(line)
+    if len(pairs) < 3:
+        return None
+    d = {k.lower(): v.strip('"') for k, v in pairs}
+    ts = None
+    if "date" in d and "time" in d:
+        ts = f'{d["date"]} {d["time"]}'
+    elif d.get("eventtime", "").isdigit():
+        ev = int(d["eventtime"])
+        if ev > 10_000_000_000_000:      # nanoseconds
+            ev //= 1_000_000_000
+        elif ev > 10_000_000_000:        # milliseconds
+            ev //= 1000
+        ts = datetime.fromtimestamp(ev, tz=timezone.utc)
+    else:
+        ts = d.get("timestamp") or d.get("time")
+    host = d.get("devname") or d.get("hostname") or d.get("host") or ""
+    actor = (d.get("srcip") or d.get("src") or d.get("srcaddr")
+             or d.get("user") or "")
+    return ts, host, actor
 
 
 @dataclass
@@ -84,12 +113,22 @@ def parse_line(line: str, tz: timezone, year: int):
             dt = None
         return ("access", dt, "", m.group("ip"),
                 f'{m.group("req")} -> {m.group("status")}')
-    # syslog
+    # RFC5424 syslog (ISO timestamp)
+    m = SYSLOG5424_RE.match(line)
+    if m:
+        return ("syslog5424", m.group("ts"), m.group("host"),
+                m.group("app"), m.group("msg"))
+    # RFC3164 syslog
     m = SYSLOG_RE.match(line)
     if m:
         dt = datetime(year, MONTHS.get(m.group("mon"), 1), int(m.group("day")),
                       *map(int, m.group("time").split(":")), tzinfo=tz)
         return ("syslog", dt, m.group("host"), m.group("proc"), m.group("msg"))
+    # key-value / logfmt (FortiGate, appliances)
+    kv = parse_kv(line)
+    if kv is not None:
+        ts, host, actor = kv
+        return ("keyvalue", ts, host, actor, line)
     return ("raw", None, "", "", line)
 
 
@@ -119,6 +158,31 @@ def parse_csv_file(path, tz, events):
                                 path, "csv", row.get("host", ""),
                                 row.get("src_ip") or row.get("user") or "",
                                 json.dumps(row, ensure_ascii=False)))
+
+
+def try_cloudtrail(path, tz, events) -> bool:
+    """Parse an AWS CloudTrail JSON file ({"Records":[...]}) or a JSON array.
+    Returns True if handled; False to fall back to JSON-lines parsing."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            doc = json.load(f)
+    except (json.JSONDecodeError, ValueError):
+        return False  # likely JSON-lines; let the line parser handle it
+    records = doc.get("Records") if isinstance(doc, dict) else doc
+    if not isinstance(records, list):
+        return False
+    for r in records:
+        if not isinstance(r, dict):
+            continue
+        dt = coerce_ts(r.get("eventTime"), tz)
+        ident = r.get("userIdentity", {}) or {}
+        actor = (r.get("sourceIPAddress") or ident.get("arn")
+                 or ident.get("userName") or "")
+        msg = f'{r.get("eventName", "")} @ {r.get("eventSource", "")} ' \
+              f'[{r.get("awsRegion", "")}]'
+        events.append(Event(_iso(dt) if dt else "", path, "cloudtrail",
+                            r.get("recipientAccountId", ""), actor, msg.strip()))
+    return True
 
 
 def sha256(path):
@@ -155,6 +219,9 @@ def main():
         coc.append((path, sha256(path)))
         if path.lower().endswith(".csv"):
             parse_csv_file(path, tz, events)
+            continue
+        # AWS CloudTrail / whole-file JSON ({"Records": [...]} or a JSON array)
+        if path.lower().endswith(".json") and try_cloudtrail(path, tz, events):
             continue
         with open(path, encoding="utf-8", errors="replace") as f:
             for line in f:
