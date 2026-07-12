@@ -1,0 +1,44 @@
+title: <Concise behavior-based title, e.g. "Suspicious SSH Brute Force Followed by Success">
+id: <generate a UUIDv4>
+status: experimental          # experimental | test | stable
+description: >
+  What this rule detects and why it matters. State the detection hypothesis:
+  "We detect <technique> by observing <signal> in <log source>."
+references:
+  - https://attack.mitre.org/techniques/Txxxx/
+author: <your name>
+date: 2026/01/01
+modified: 2026/01/01
+tags:
+  - attack.<tactic>            # e.g. attack.credential_access
+  - attack.t<technique_id>     # e.g. attack.t1110.001
+logsource:
+  product: <linux | windows | zeek | aws | azure | gcp | ...>
+  service: <sshd | security | cloudtrail | ...>
+  category: <authentication | process_creation | network_connection | ...>
+detection:
+  selection:
+    EventID: <id or field match>
+    # field: value  (fields must match the customer's normalized schema —
+    # see resources/log-source-mapping.md)
+  filter_known_good:
+    src_ip:
+      - 10.0.0.0/8            # example allowlist entries
+  timeframe: 10m              # for count-based logic
+  condition: selection and not filter_known_good
+fields:                       # fields to surface in the alert
+  - src_ip
+  - user
+  - host
+falsepositives:
+  - Legitimate admin activity from jump hosts (allowlist src_ip)
+  - Vulnerability scanners / automated health checks
+level: <informational | low | medium | high | critical>
+
+# --- rule metadata (not part of Sigma spec; for this skill's rule package) ---
+# expected_fp_rate: low | medium | high
+# tuning:
+#   - Add service accounts to filter_known_good
+#   - Raise threshold to N attempts if noisy
+# test_positive: <sample event that SHOULD fire>
+# test_negative: <sample event that should NOT fire>

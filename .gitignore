@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Secrets — never commit credentials
+.env
+*.key
+*.pem
+secrets/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Sample/evidence data — keep real logs out of the repo
+samples/
+evidence/
+*.log

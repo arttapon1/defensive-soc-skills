@@ -1,0 +1,73 @@
+# Vendor-neutral SOAR playbook definition.
+# Bind `integration:` names to concrete APIs via resources/integration-catalog.md.
+playbook:
+  name: <e.g. auto-contain-malicious-ip>
+  version: 1.0.0
+  description: <what it does and when it runs>
+  owner: <team / person>
+  severity_scope: [high, critical]     # only auto-run for these
+
+trigger:
+  source: siem                          # siem | edr | email | manual
+  detection_id: <sigma id or SIEM rule id>
+  inputs:
+    - name: indicator
+      type: ip | domain | hash | url
+
+enrichment:
+  # query multiple sources; require agreement before acting
+  sources:
+    - virustotal
+    - abuseipdb
+    - otx
+    - groupib          # if licensed
+  aggregate:
+    malicious_threshold: 3     # min sources/votes flagging malicious
+    confidence: high           # required confidence to proceed to block
+
+decision:
+  # explicit, ordered rules — first match wins
+  rules:
+    - if: "malicious_votes >= 3 and confidence == 'high'"
+      then: contain
+    - if: "malicious_votes >= 1"
+      then: escalate
+    - else: close_false_positive
+
+actions:
+  contain:
+    - integration: firewall_paloalto     # see integration-catalog
+      action: block_ip
+      params:
+        indicator: "{{ indicator }}"
+        ttl: 24h                          # auto-expire the block
+        dry_run: true                     # MUST be flipped consciously
+      requires_approval: true             # gate for production
+      rollback:
+        integration: firewall_paloalto
+        action: unblock_ip
+        params: { indicator: "{{ indicator }}" }
+    - integration: ticketing
+      action: create_incident
+      params: { title: "Auto-contained {{ indicator }}", priority: high }
+    - integration: chatops
+      action: notify
+      params: { channel: soc-alerts, message: "Blocked {{ indicator }} (TTL 24h)" }
+  escalate:
+    - integration: ticketing
+      action: create_incident
+      params: { title: "Review suspicious {{ indicator }}", priority: medium }
+  close_false_positive:
+    - integration: siem
+      action: close_alert
+      params: { reason: "Enrichment: benign" }
+
+guardrails:
+  never_block:                # allowlist — never act on these
+    - 10.0.0.0/8
+    - 192.168.0.0/16
+    - <partner/monitoring ranges>
+  max_actions_per_run: 10     # circuit breaker
+  require_approval_for: [block_ip, block_domain, quarantine_host]
+  audit_log: true             # who/what/when/why for every action
+  on_error: notify_human      # fail safe, not open
